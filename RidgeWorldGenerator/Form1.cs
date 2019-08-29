@@ -15,9 +15,11 @@ namespace RidgeWorldGenerator
         public Form1()
         {
             InitializeComponent();
+            drawParams = new DrawParams() { offset = Vector2.ZERO, scale = 1.0f };
         }
 
         List<Curve> curves;
+        DrawParams drawParams;
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
@@ -30,7 +32,13 @@ namespace RidgeWorldGenerator
             Point p2 = new Point(200, 100);  // Endpoint
 
             Pen pen = new Pen(Color.FromArgb(255, 0, 0, 255));
-            curves.ForEach(c=>c.Paint(e, pen));
+            curves.ForEach(c=>c.Paint(drawParams, pen, e));
         }
+    }
+
+    struct DrawParams
+    {
+        public Vector2 offset;
+        public float scale;
     }
 }
