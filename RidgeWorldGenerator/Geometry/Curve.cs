@@ -31,18 +31,23 @@ namespace RidgeWorldGenerator.Geometry
             }
         }
 
-        public double lenght => segments.Sum(s => s.Length);
+        public double Lenght => segments.Sum(s => s.Length);
+        private List<Bez_Point> GetPointsOfDelta(double delta)
+        {
+            // Grabs segments; Get the points of each of them; move into single list; remove duplicates;
+            return segments.ConvertAll(seg => seg.GetPointsOfDelta(delta)).SelectMany(x => x).Distinct().ToList();
+        }
+
+
 
         public void Paint(DrawParams drawParams, Pen pen, System.Windows.Forms.PaintEventArgs e)
         {
             for (int i = 0; i < segments.Count; i++)
             {
                 e.Graphics.DrawBezier(pen, segments[i].p1.ToPoint(drawParams), segments[i].c1.ToPoint(drawParams), segments[i].c2.ToPoint(drawParams), segments[i].p2.ToPoint(drawParams));
-                for (double t = 0; t < 1; t+= 0.2)
-                {
-                    e.Graphics.DrawEllipse(pen, new RectangleF(segments[i].GetPointAt(t).ToPoint(drawParams), new SizeF(4, 4)));
-                }
             }
+            List<Vector2> points = GetPointsOfDelta(20).ConvertAll(p=>(Vector2)p);
+            points.ForEach(p => e.Graphics.DrawEllipse(pen, new RectangleF(p.ToPoint(drawParams), new SizeF(4, 4))));
         }
 
         struct Segment
@@ -67,15 +72,44 @@ namespace RidgeWorldGenerator.Geometry
                 return new Vector2(x, y);
             }
 
-            public double Length { get
+            public double Length
+            {
+                get
                 {
+                    double delta = 0.1;
                     double sum = 0;
-                    for(double t = 0; t < 1; t+= 0.1)
+                    for (double t = 0; t <= 1 - delta; t += delta)
                     {
-                        sum += (GetPointAt(t + .1) - GetPointAt(t)).Length;
+                        sum += (GetPointAt(t + delta) - GetPointAt(t)).Length;
                     }
                     return sum;
-                } }
+                }
+            }
+
+            public List<Bez_Point> GetPointsOfDelta(double delta)
+            {
+                List<Bez_Point> vectors = new List<Bez_Point>();
+                int segments = (int)(Length / delta);
+                if (segments == 0) segments = 1;
+                double dt = 1.0 / segments;
+                for (double t = 0; t < 1; t += dt)
+                    vectors.Add(new Bez_Point(this, t));
+                return vectors;
+            }
+        }
+
+        struct Bez_Point
+        {
+            readonly Segment segment;
+            readonly double t;
+
+            public Bez_Point(Segment segment, double t)
+            {
+                this.segment = segment;
+                this.t = t;
+            }
+
+            public static implicit operator Vector2(Bez_Point b) => b.segment.GetPointAt(b.t);
         }
     }
 }
