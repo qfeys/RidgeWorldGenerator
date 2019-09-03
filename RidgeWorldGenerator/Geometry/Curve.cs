@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RidgeWorldGenerator
+namespace RidgeWorldGenerator.Geometry
 {
 
 
@@ -18,7 +18,6 @@ namespace RidgeWorldGenerator
             if (pointlist.Count % 3 != 1)
                 throw new ArgumentException("pointlist invalid length", "pointlist");
             segments = new List<Segment>();
-            float scale = .5f;
 
             Vector2 p1 = pointlist[0];
 
@@ -32,11 +31,17 @@ namespace RidgeWorldGenerator
             }
         }
 
+        public double lenght => segments.Sum(s => s.Length);
+
         public void Paint(DrawParams drawParams, Pen pen, System.Windows.Forms.PaintEventArgs e)
         {
             for (int i = 0; i < segments.Count; i++)
             {
                 e.Graphics.DrawBezier(pen, segments[i].p1.ToPoint(drawParams), segments[i].c1.ToPoint(drawParams), segments[i].c2.ToPoint(drawParams), segments[i].p2.ToPoint(drawParams));
+                for (double t = 0; t < 1; t+= 0.2)
+                {
+                    e.Graphics.DrawEllipse(pen, new RectangleF(segments[i].GetPointAt(t).ToPoint(drawParams), new SizeF(4, 4)));
+                }
             }
         }
 
@@ -46,26 +51,31 @@ namespace RidgeWorldGenerator
             public Vector2 c1;
             public Vector2 p2;
             public Vector2 c2;
+
+            public Vector2 GetPointAt(double t)
+            {
+                if (t < 0 || t > 1)
+                    throw new ArgumentOutOfRangeException("t must be between 0 and 1. t is: " + t);
+                double x = ((1 - t) * (1 - t) * (1 - t)) * p1.x
+                           + 3 * ((1 - t) * (1 - t)) * t * c1.x
+                                 + 3 * (1 - t) * (t * t) * c2.x
+                                           + (t * t * t) * p2.x;
+                double y = ((1 - t) * (1 - t) * (1 - t)) * p1.y
+                           + 3 * ((1 - t) * (1 - t)) * t * c1.y
+                                 + 3 * (1 - t) * (t * t) * c2.y
+                                           + (t * t * t) * p2.y;
+                return new Vector2(x, y);
+            }
+
+            public double Length { get
+                {
+                    double sum = 0;
+                    for(double t = 0; t < 1; t+= 0.1)
+                    {
+                        sum += (GetPointAt(t + .1) - GetPointAt(t)).Length;
+                    }
+                    return sum;
+                } }
         }
-    }
-
-    struct Vector2
-    {
-        public readonly double x;
-        public readonly double y;
-
-        public Vector2(double x, double y)
-        {
-            this.x = x;
-            this.y = y;
-        }
-
-        public static Vector2 operator +(Vector2 v1, Vector2 v2) => new Vector2(v1.x + v2.x, v1.y + v2.y);
-        public static Vector2 operator -(Vector2 v1, Vector2 v2) => new Vector2(v1.x - v2.x, v1.y - v2.y);
-
-        public static Vector2 ZERO => new Vector2(0, 0);
-
-        public Point ToPoint(Vector2 offset, double scale = 1) => new Point((int)((x - offset.x) * scale), (int)((y - offset.y) * scale));
-        public Point ToPoint(DrawParams dp) => ToPoint(dp.offset, dp.scale);
     }
 }

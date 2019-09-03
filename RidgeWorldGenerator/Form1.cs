@@ -18,7 +18,7 @@ namespace RidgeWorldGenerator
             drawParams = new DrawParams() { offset = Vector2.ZERO, scale = 1.0f };
         }
 
-        List<Curve> curves;
+        List<Geometry.Curve> curves;
         DrawParams drawParams;
 
         private void Form1_Paint(object sender, PaintEventArgs e)
