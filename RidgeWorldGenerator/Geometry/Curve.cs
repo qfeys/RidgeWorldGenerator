@@ -46,8 +46,12 @@ namespace RidgeWorldGenerator.Geometry
             {
                 e.Graphics.DrawBezier(pen, segments[i].p1.ToPoint(drawParams), segments[i].c1.ToPoint(drawParams), segments[i].c2.ToPoint(drawParams), segments[i].p2.ToPoint(drawParams));
             }
-            List<Vector2> points = GetPointsOfDelta(20).ConvertAll(p=>(Vector2)p);
-            points.ForEach(p => e.Graphics.DrawEllipse(pen, new RectangleF(p.ToPoint(drawParams), new SizeF(4, 4))));
+            List<Bez_Point> points = GetPointsOfDelta(20);
+            points.ForEach(p =>
+            {
+                e.Graphics.DrawEllipse(pen, new RectangleF(((Vector2)p).ToPoint(drawParams), new SizeF(4, 4)));
+                new Ray(p, p.Normal).Paint(drawParams, pen, e);
+            });
         }
 
         struct Segment
@@ -98,7 +102,7 @@ namespace RidgeWorldGenerator.Geometry
             }
         }
 
-        struct Bez_Point
+        class Bez_Point
         {
             readonly Segment segment;
             readonly double t;
@@ -107,6 +111,22 @@ namespace RidgeWorldGenerator.Geometry
             {
                 this.segment = segment;
                 this.t = t;
+            }
+
+            private double _normal = 10; // impossible angle
+            public double Normal { get { if (_normal == 10) _normal = CalculateNormal(); return _normal; } }
+
+            double CalculateNormal()
+            {
+                double dx = ((6 - 3 * t) * t - 3) * segment.p1.x
+                         + (t * (9 * t - 12) + 3) * segment.c1.x
+                                + (6 - 9 * t) * t * segment.c2.x
+                                      + 3 * t * t * segment.p2.x;
+                double dy = ((6 - 3 * t) * t - 3) * segment.p1.y
+                         + (t * (9 * t - 12) + 3) * segment.c1.y
+                                + (6 - 9 * t) * t * segment.c2.y
+                                      + 3 * t * t * segment.p2.y;
+                return new Vector2(dx, -dy).Angle;
             }
 
             public static implicit operator Vector2(Bez_Point b) => b.segment.GetPointAt(b.t);
